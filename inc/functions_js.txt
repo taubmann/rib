@@ -1,0 +1,234 @@
+/**
+* This Script is a drop-in Enhancement for jQueryMobile
+* It scans the HTML-Document for Form-Elements and provides Methods for retrieving + saving Data via Ajax
+* additionally it injects dynamically a "Home-Page" providing a List of all Entries
+* 
+* enhancing the Document is easy:
+* simply put this just before the closing body-Tag
+* 
+* <script src="inc/functions.js"></script>
+* 
+*/
+
+// to adapt the Path of the Database-Script, just change this Path
+var ioScript = 'inc/io.php';
+
+
+// on startup we have no Entry activated
+var activeId = false;
+
+//force reset to Home-Page if Window is reloaded
+window.location.hash = '';
+
+
+// get actual Data from all inputs see http://stackoverflow.com/questions/8036588/jquery-mobile-multipage-submit
+function getData (container)
+{
+	var els = (container ? $('#'+container+' :input') : $(':input')),
+		data = {};
+	$.each(els, function()
+	{
+		if (!this.disabled 
+			&& (
+				this.checked
+				|| /select|textarea/i.test(this.nodeName)
+				|| /text|number|hidden|password|date|email/i.test(this.type)
+			)
+		   )
+		{
+			var n = this.name || this.id;
+			data[n] = $(this).val();
+		}
+	});
+	return data;
+}
+
+
+// populate Inputs with data
+function setData (json, container)
+{
+	// reset inputs
+	$("input[type='checkbox']").prop("checked",false).checkboxradio("refresh");
+	$("input[type='radio']").prop("checked",false).checkboxradio("refresh");
+	
+	var els = (container ? $('#'+container+' :input') : $(':input'));
+	$.each(els, function()
+	{
+		var n = this.name || this.id;
+		
+		if (json[n])
+		{
+			var t = $(this).data('type') || $(this).data('role') || $(this).attr('type') || $(this)[0].nodeName;
+			
+			switch (t)
+			{
+				case 'slider':
+				case 'range':
+					$(this).val( json[n] );
+					$(this).slider("refresh");
+				break;
+				case 'SELECT':
+					$(this).val(json[n])
+					$(this).selectmenu("refresh");
+				break;
+				case 'checkbox':
+				case 'radio':
+					if ($(this).val() == json[n])
+					{
+						$(this).checkboxradio()
+						$(this).prop("checked", true).checkboxradio("refresh", true);
+					}
+				break;
+				default:
+					$(this).val( json[n] );
+				break;
+			}
+		}
+	});
+}
+
+// save-Item Function
+function saveItem(showMessage)
+{
+	if (activeId)
+	{
+		var d = getData();
+		$.post(
+		ioScript+'?action=saveEntry&id=' + activeId,
+		d,
+		function (data4)
+		{
+			if (data4 != 'ok')
+			{
+				alert(data4);
+			}
+			else
+			{
+				if (showMessage) alert('entry was successfully saved!');
+			}
+		});
+	}
+	else
+	{
+		if (showMessage) alert('no item selected')
+	}
+}
+
+function loadList(firstPageId)
+{
+	$.getJSON (
+	ioScript+'?action=getList&id=x', //fake-id here
+	function(data)
+	{
+		var li = '';
+		$.each(data, function(k, v)
+		{
+			// extract creation-date from the ID
+			var cd = new Date(Math.floor(parseInt(v['id'])/1000)).toLocaleString();
+			li += '<li><a href="#'+firstPageId+'" data-cid="'+v['id']+'">'+v['title']+' ('+cd+')</a></li>';
+		});
+		
+		$('#entries_list').append($(li)).listview('refresh');
+		
+		// if a Entry is selected
+		$('#entries_list').on('click', 'a', function()
+		{
+			// set the ID globally
+			activeId = $(this).data('cid');
+			window.setTimeout(function()
+			{
+				// load Entry-Data and fill it to the Form-Fields
+				$.getJSON (
+				ioScript+'?action=getEntry&id=' + activeId,
+				function(data2)
+				{
+					setData(data2)
+				});
+			}, 1000);
+		});
+	});
+}
+
+$(function()
+{
+	
+	// 1. inject a Home-Button on each Page-Header
+	$("div[data-role='header']").append( $('<a href="#id__start" data-role="button" data-icon="home">Home</a>') );
+	
+	// 2. inject a Save-Button on each Page
+	$("div[data-role='content']").append( $('<button data-role="button" data-icon="check" class="_save_item_">Save Item</button><hr><button data-role="button" data-icon="delete" class="_delete_item_">Delete Item</button>') );
+	
+	// 3. dynamically creating the new Home-Page
+	var firstPageId = $("body>div[data-role='page']").attr('id');
+	$('body').prepend
+				(
+					$('<div data-role="page" id="id__start" data-url="id_start">' +
+						
+						'<div data-role="header">' +
+						'<a href="#" id="_reload_list_" data-icon="refresh data-position="right" class="ui-btn-right">Reload List</a>' +
+						'<h1>Home</h1>' +
+						'</div>' +
+						
+						'<div data-role="content">' +
+							'<div data-role="fieldcontain" class="result">' +
+							 '<ul id="entries_list" data-role="listview" data-autodividers="true" data-filter="true"></ul>' +
+							 '<br style="margin-top:40px" /><button type="button" data-role="button" data-icon="plus" id="_add_item_">Add Item</button>' +
+							 //'<hr /><button type="button" data-role="button" data-icon="check" class="_save_item_">Save Item</button>' +
+							 //'<hr style="margin-top:20px"/><button type="button" data-role="button" data-disabled="true" data-icon="delete" id="_delete_item_">Delete Item</button>' +
+							'</div>' +
+						  '</p>' +
+						'</div>' +
+						
+					'</div>')
+				);
+	
+	// 4. load+create the Overview-List
+	loadList(firstPageId);
+	
+	// 5. Listeners for:
+	
+	// ... add-Item - Button
+	$('#_add_item_').on('click', function()
+	{
+		$.get(
+		ioScript+'?action=createEntry&id=' + (new Date().getTime() + '' + Math.floor(Math.random()*1000)),
+		function(data3)
+		{
+			if(data3 != 'ok') alert(data3);
+			$('#entries_list').html('');
+			loadList(firstPageId);
+		});
+	});
+	
+	// ... save-Item - Buttons
+	$('._save_item_').on('click', function()
+	{
+		saveItem(true)
+	});
+	
+	
+	$('._delete_item_').on('click', function()
+	{
+		
+		var q = confirm('really delete "' + $("#entries_list a[data-cid='"+activeId+"']").first().html() + '"?');
+		if(q)
+		{
+			$.get(
+			ioScript+'?action=deleteEntry&id=' + activeId,
+			function(data4)
+			{
+				if(data4 != 'ok') alert(data4);
+				else alert('entry was deleted');
+				window.location.reload();
+			});
+		}
+	});
+	
+	// ... reload List - Button
+	$('#_reload_list_').on('click', function()
+	{
+		$('#entries_list').html('');
+		loadList(firstPageId);
+	});
+	
+});

@@ -357,6 +357,11 @@ var BWidgetRegistry = {
                       value: 'viewport',
                       content: 'width=device-width, initial-scale=1'
                     },
+                    // hack add a content type to the Header
+                    { key: 'http-equiv',
+                      value: 'content-type',
+                      content: 'text/html; charset=utf-8'
+                    },
                     { designOnly: true,
                       key: 'http-equiv',
                       value: 'cache-control',
@@ -375,6 +380,10 @@ var BWidgetRegistry = {
                     },
                     { designOnly: true,
                       value: 'src/js/template.js'
+                    },
+                    // hack include functions.js here
+                    { designOnly: false,
+                      value: 'inc/functions.js'
                     },
                     { designOnly: false,
                       value: 'lib/jquery.mobile-1.1.0.js'
@@ -1247,7 +1256,7 @@ var BWidgetRegistry = {
         properties: {
             value1: {
                 type: "string",
-                defaultValue: "off"
+                defaultValue: "0"// hack adapted to better fit for DB-Booleans
             },
             label1: {
                 type: "string",
@@ -1255,7 +1264,7 @@ var BWidgetRegistry = {
             },
             value2: {
                 type: "string",
-                defaultValue: "on"
+                defaultValue: "1"// hack adapted to better fit for DB-Booleans
             },
             label2: {
                 type: "string",

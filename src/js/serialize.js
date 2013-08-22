@@ -671,22 +671,51 @@ $(function () {
                 });
             }
         });
-        resultHTML && zip.add("index.html", resultHTML.html);
+        
+        // hack BEGIN
+        
+        // add some Files to the zip (don't use dots inside the Src-Name)
+        
+        files.push({
+				"src": "inc/io_php.txt",
+				"dst": "inc/io.php"
+		});
+		files.push({
+				"src": "inc/io_bsh.txt",
+				"dst": "inc/io.html"
+		});
+		files.push({
+				"src": "inc/functions_js.txt",
+				"dst": "inc/functions.js"
+		});
+		
+        
+        // throw away all Numbers in js+css-Includes (there must be alternative Files without the Versioning)
+        var h = resultHTML.html;
+        h = h.replace(/-\d.\d.\d/g, '');
+        resultHTML && zip.add("index.html", h);
+        // hack END
+        
         // projName now is the whole package name
         projName = projName + '.' + type;
 
         i = 0;
         files.forEach(function (file, index) {
+           //if (file !== 'inc/functions.js') {
             var req, srcPath, dstPath;
+            
             // We have to do ajax request not using jquery as we can't get "arraybuffer" response from jquery
             var req = window.ActiveXObject ? new window.ActiveXObject( "Microsoft.XMLHTTP" ): new XMLHttpRequest();
             req = window.ActiveXObject ? new window.ActiveXObject( "Microsoft.XMLHTTP" ): new XMLHttpRequest();
+            
             if ((typeof file === "object") && file.dst && file.src) {
                 srcPath = file.src;
                 dstPath = file.dst;
             } else if (typeof file === "string") {
+                file = file.replace(/-\d.\d.\d/g, '');// hack throw away all Numbers
                 srcPath = file;
                 dstPath = file;
+                
             } else {
                 console.error("Invalid path for exported zipfile.");
                 return;
@@ -711,6 +740,7 @@ $(function () {
                 alert(e);
             }
             req.send(null);
+		//}
         });
     }
 

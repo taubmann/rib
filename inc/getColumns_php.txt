@@ -1,0 +1,55 @@
+<?php
+/**
+* Collect all Inputs with id as Database-Fields from the Json-Configuration-File
+* 
+*/
+
+$jsons = glob('../*.json');
+if(!isset($jsons[0])) exit('no Json-File found');
+$str = file_get_contents($jsons[0]);
+
+$cols = array('id INTEGER');
+
+if ($j = json_decode($str, true))
+{
+	//print_r($j);
+	foreach ($j['children'] as $page)
+	{
+		foreach ($page['children'] as $page_element)
+		{
+			if ($page_element['type'] == 'Content')
+			{
+				foreach ($page_element['children'] as $content_element)
+				{
+					switch($content_element['type'])
+					{
+						case 'CheckboxGroup':
+							foreach($content_element['children'] as $cb)
+							{
+								if(isset($cb['properties']['id'])) $cols[] = $cb['properties']['id'] . ' TEXT';
+							}
+						break;
+						
+						case 'SelectMenu':
+						case 'RadioGroup':
+							if(isset($content_element['properties']['id'])) $cols[] = $content_element['properties']['id'] . ' TEXT';
+						break;
+						case 'ToggleSwitch':
+						case 'Slider':
+							if(isset($content_element['properties']['id'])) $cols[] = $content_element['properties']['id'] . ' INTEGER';
+						break;
+						case 'TextInput':
+						case 'TextArea':
+							if(isset($content_element['properties']['id'])) $cols[] = $content_element['properties']['id'] . ' TEXT';
+						break;
+						
+					}
+				}
+			}
+		}
+	}
+	
+}
+
+// test-output
+//echo 'CREATE TABLE IF NOT EXISTS `'.$TABLENAME.'` ('.implode(', ', $cols).')';

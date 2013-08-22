@@ -674,11 +674,15 @@ $(function () {
         
         // hack BEGIN
         
-        // add some Files to the zip (don't use dots inside the Src-Name)
+        // add some Files to the zip ( don't use dots inside the Src-Name!!! )
         
         files.push({
 				"src": "inc/io_php.txt",
 				"dst": "inc/io.php"
+		});
+		files.push({
+				"src": "inc/getColumns_php.txt",
+				"dst": "inc/getColumns.php"
 		});
 		files.push({
 				"src": "inc/io_bsh.txt",

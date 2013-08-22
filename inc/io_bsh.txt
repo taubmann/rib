@@ -1,0 +1,119 @@
+<bsh>
+/*
+
+*/
+import android.content.Context;
+import org.json.*;
+
+DBNAME = "test.db";
+TABLENAME = "test";
+TITLEFIELD = "title";
+
+service = server.props.get("serviceContext");
+
+// Create Database
+db = service.openOrCreateDatabase(DBNAME, Context.MODE_WORLD_WRITEABLE, null);
+
+//print("DB location: " + service.getDatabasePath(DATABASE_NAME));
+
+json = new JSONObject();
+
+action = parameters.get("action");
+id = parameters.get("id");
+
+if (c != null && action != null)
+{
+	switch(action)
+	{
+		case "getList":
+			
+			try
+			{
+				
+				print("[");
+				c = db.rawQuery("SELECT " + TITLEFIELD + ", id FROM " + TABLENAME + " ORDER BY " + TITLEFIELD, null);
+				tiColumn  = c.getColumnIndex(TITLEFIELD);
+				idColumn = c.getColumnIndex("id");
+				c.moveToFirst();
+
+				if (c.isFirst())
+				{
+					 int i = 0;
+					 do
+					 {
+						  if (i>0)
+						  {
+							  print(",");
+						  }
+						  print("{\"id\":"+c.getString(idColumn)+",\"title\":\""+c.getString(tiColumn)+"\"}");
+						  i++;
+					 } while(c.moveToNext());
+				}
+				c.close();
+				
+				print("]");
+			}
+			catch(e)
+			{
+				print(e);
+			}
+			
+		break;
+		case "getEntry":
+			
+			el = db.rawQuery("SELECT * FROM " + TABLENAME + " WHERE id = " + id, null);
+			c.moveToFirst();
+			if (c.isFirst())
+			{
+				json.put(c);
+			}
+			c.close();
+			print(json.toString());
+			
+		break;
+		case "createEntry":
+			
+			try
+			{
+				db.rawQuery("INSERT INTO `" + TABLENAME + "` (`id`, `" + TITLEFIELD + "`) VALUES(" + id + ", '_empty_')", null);
+				print("ok");
+			}
+			catch(e)
+			{
+				print(e);
+			}
+			
+		break;
+		case "saveEntry":
+			
+			try
+			{
+				
+				print("ok");
+			}
+			catch(e)
+			{
+				print(e);
+			}
+			
+		break;
+		case "deleteEntry":
+			
+			try
+			{
+				db.rawQuery("DELETE FROM `" + TABLENAME + "` WHERE `id` = " + id, null);
+				print("ok");
+			}
+			catch(e)
+			{
+				print(e);
+			}
+			
+		break;
+	}
+}
+
+// Close db
+db.close();
+
+</bsh>

@@ -1,0 +1,132 @@
+<?php
+/**
+* Input-Output
+* 
+* 
+*/
+
+// this will change in the future!! here you can adapt some Values
+$DBNAME = 'test.db';
+$TABLENAME = 'test';
+$TITLEFIELD = 'title';
+
+
+
+$db_exists = file_exists(dirname(__FILE__) . '/' . $DBNAME);
+try
+{
+	$db = new \PDO('sqlite:' . __DIR__ . '/' . $DBNAME);
+	$db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+	$db->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+	
+}
+catch (PDOException $e)
+{
+	exit('Error connecting Database: ' . $e->getMessage());
+}
+
+if (!$db_exists)
+{
+	try
+	{
+		include 'getColumns.php';
+		$db->query('CREATE TABLE IF NOT EXISTS `'.$TABLENAME.'` ('.implode(', ', $cols).')');
+	}
+	catch(exception $e)
+	{
+		echo $e;
+	}
+}
+
+
+if (isset($_GET['id']) && isset($_GET['action']))
+{
+	
+	// choose the Action
+	switch ($_GET['action'])
+	{
+		
+		// return a List of all Entries as [{"title":"foo","id":12345},...]
+		case 'getList':
+			try
+			{
+				$list = $db->query( 'SELECT `' . $TITLEFIELD  .'` as title, `id` FROM `' . $TABLENAME . '` ORDER BY `' . $TITLEFIELD . '`' )->fetchAll();
+				echo json_encode($list);
+			}
+			catch(exception $e)
+			{
+				echo $e;
+			}
+		break;
+		
+		// return an Entry as {"title":"bla","id":"1234567890","foo":"0",...}
+		case 'getEntry':
+			$element = $db->query( 'SELECT * FROM `' . $TABLENAME . '` WHERE id=' . intval($_GET['id']) )->fetch();
+			echo json_encode($element);
+		break;
+		
+		// create a new Entry (we set the ID manually via JS because we don't want to use Autoincrement)
+		case 'createEntry':
+			try
+			{
+				$db->query( 'INSERT INTO `' . $TABLENAME . '` (`id`, `' . $TITLEFIELD . '`) VALUES(' . intval($_GET['id']) .', \'[...]\')' );
+				echo 'ok';
+			}
+			catch(exception $e)
+			{
+				echo $e;
+			}
+		break;
+		
+		// update an existing Entry
+		case 'saveEntry':
+			// get the column-names
+			$columns = array();
+			$tableinfos = $db->query( 'PRAGMA table_info(' . $TABLENAME . ')' )->fetchAll();
+			foreach($tableinfos as $tableinfo)
+			{
+				$columns[$tableinfo['name']] = $tableinfo['type'];
+			}
+			
+			// create the Insertion-Code
+			$sets = array();
+			$adds = array();
+			foreach ($_POST as $k => $v)
+			{
+				// add the update only if the column really exists
+				if (isset($columns[$k]))
+				{
+					$sets[] = $k . '=:' . $k;
+					$adds[':' . $k] = $v;
+				}
+			}
+			$query = 'UPDATE `' . $TABLENAME . '` SET ' . implode (', ', $sets) . ' WHERE `id` = ' . intval($_GET['id']);
+			try
+			{
+				$prep = $db->prepare($query);
+				$prep->execute($adds);
+				echo 'ok';
+			}
+			catch(exception $e)
+			{
+				echo $e . ' // ' . $query;
+			}
+			
+		break;
+		
+		// delete an Entry
+		case 'deleteEntry':
+			try
+			{
+				$db->query('DELETE FROM `' . $TABLENAME . '` WHERE `id` = ' . intval($_GET['id']));
+				echo 'ok';
+			}
+			catch(exception $e)
+			{
+				echo $e;
+			}
+		break;
+	}
+}
+?>
+

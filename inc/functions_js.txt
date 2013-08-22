@@ -1,27 +1,27 @@
 /**
-* This Script is a drop-in Enhancement for jQueryMobile
+* This Script is a drop-in Enhancement for jQueryMobile-Pages
 * It scans the HTML-Document for Form-Elements and provides Methods for retrieving + saving Data via Ajax
 * additionally it injects dynamically a "Home-Page" providing a List of all Entries
 * 
 * enhancing the Document is easy:
-* simply put this just before the closing body-Tag
+* simply put this before the script-inclusion of jquery-mobile.js
 * 
 * <script src="inc/functions.js"></script>
 * 
 */
 
-// to adapt the Path of the Database-Script, just change this Path
+// to adapt the Path of the Database-Script, just change this
 var ioScript = 'inc/io.php';
 
 
 // on startup we have no Entry activated
 var activeId = false;
 
-//force reset to Home-Page if Window is reloaded
+// force reset to "Home-Page" if Window is reloaded
 window.location.hash = '';
 
 
-// get actual Data from all inputs see http://stackoverflow.com/questions/8036588/jquery-mobile-multipage-submit
+// get actual Data from all inputs [inside a container]
 function getData (container)
 {
 	var els = (container ? $('#'+container+' :input') : $(':input')),
@@ -44,10 +44,10 @@ function getData (container)
 }
 
 
-// populate Inputs with data
+// populate Inputs with Data [inside a container]
 function setData (json, container)
 {
-	// reset inputs
+	// reset Inputs
 	$("input[type='checkbox']").prop("checked",false).checkboxradio("refresh");
 	$("input[type='radio']").prop("checked",false).checkboxradio("refresh");
 	
@@ -87,7 +87,7 @@ function setData (json, container)
 	});
 }
 
-// save-Item Function
+// Save-Item Function
 function saveItem(showMessage)
 {
 	if (activeId)
@@ -104,26 +104,26 @@ function saveItem(showMessage)
 			}
 			else
 			{
-				if (showMessage) alert('entry was successfully saved!');
+				if (showMessage) alert('Entry was successfully saved!');
 			}
 		});
 	}
 	else
 	{
-		if (showMessage) alert('no item selected')
+		if (showMessage) alert('no Item selected')
 	}
 }
 
 function loadList(firstPageId)
 {
 	$.getJSON (
-	ioScript+'?action=getList&id=x', //fake-id here
+	ioScript+'?action=getList&id=x', // fake-ID here
 	function(data)
 	{
 		var li = '';
 		$.each(data, function(k, v)
 		{
-			// extract creation-date from the ID
+			// extract Creation-Date from the ID
 			var cd = new Date(Math.floor(parseInt(v['id'])/1000)).toLocaleString();
 			li += '<li><a href="#'+firstPageId+'" data-cid="'+v['id']+'">'+v['title']+' ('+cd+')</a></li>';
 		});
@@ -149,9 +149,9 @@ function loadList(firstPageId)
 	});
 }
 
+
 $(function()
 {
-	
 	// 1. inject a Home-Button on each Page-Header
 	$("div[data-role='header']").append( $('<a href="#id__start" data-role="button" data-icon="home">Home</a>') );
 	
@@ -186,7 +186,6 @@ $(function()
 	loadList(firstPageId);
 	
 	// 5. Listeners for:
-	
 	// ... add-Item - Button
 	$('#_add_item_').on('click', function()
 	{
@@ -206,7 +205,7 @@ $(function()
 		saveItem(true)
 	});
 	
-	
+	// ... delete-Item - Button
 	$('._delete_item_').on('click', function()
 	{
 		
@@ -232,3 +231,4 @@ $(function()
 	});
 	
 });
+

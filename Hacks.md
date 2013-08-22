@@ -17,5 +17,6 @@ This Version of RIB is hacked to address following Requirements
 
 **(just search for "hack")**
 
-
+* src/js/serialize.js (Function createZipAndExport)
+* src/js/widgets.js
 
